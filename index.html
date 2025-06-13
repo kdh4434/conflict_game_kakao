@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이해충돌 짝 맞추기</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f4f8;
+    }
+    h1 {
+      margin-top: 30px;
+    }
+    #game-board {
+      display: grid;
+      grid-template-columns: repeat(4, 80px);
+      gap: 10px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    .card {
+      width: 80px;
+      height: 80px;
+      background-color: #0077cc;
+      color: white;
+      font-size: 12px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      border-radius: 8px;
+      user-select: none;
+    }
+    .flipped {
+      background-color: #fff;
+      color: #000;
+      border: 1px solid #0077cc;
+    }
+    #timer {
+      font-size: 18px;
+      margin-top: 10px;
+      color: #d9534f;
+    }
+  </style>
+</head>
+<body>
+  <h1>이해충돌 짝 맞추기 게임</h1>
+  <div id="timer">⏱️ 남은 시간: 90초</div>
+  <div id="game-board"></div>
+  <p id="result"></p>
+  
+  <script>
+    const pairs = [
+      ["사적이해관계", "직무 대상자에 가족/지인 포함"],
+      ["직무회피", "자신이 이해당사자인 업무를 회피"],
+      ["수의계약 제한", "가족과 계약 불가"],
+      ["퇴직자 접촉", "사전 신고 필수"],
+      ["부동산 투기금지", "내부 정보로 부동산 매입 금지"],
+      ["외부활동 제한", "외부 강의 등 사전 승인 필요"],
+      ["비밀이용 금지", "내부 정보 사적 이용 금지"],
+      ["담당관", "제도를 관리하는 내부 책임자"]
+    ];
+
+    let cards = [];
+    let first = null;
+    let second = null;
+    let matched = 0;
+    let timeLeft = 90;
+    let timerInterval = null;
+
+    function shuffle(array) {
+      return array.flat().sort(() => 0.5 - Math.random());
+    }
+
+    function createBoard() {
+      const board = document.getElementById("game-board");
+      const shuffled = shuffle(pairs);
+      cards = shuffled.concat([...shuffled]).sort(() => Math.random() - 0.5);
+      cards = cards.map((text, index) => {
+        const div = document.createElement("div");
+        div.classList.add("card");
+        div.dataset.text = text;
+        div.dataset.index = index;
+        div.innerText = "?";
+        div.addEventListener("click", handleFlip);
+        board.appendChild(div);
+        return div;
+      });
+    }
+
+    function handleFlip(e) {
+      const clicked = e.currentTarget;
+      if (clicked.classList.contains("flipped") || second) return;
+
+      clicked.innerText = clicked.dataset.text;
+      clicked.classList.add("flipped");
+
+      if (!first) {
+        first = clicked;
+      } else {
+        second = clicked;
+        if (isMatch(first.dataset.text, second.dataset.text)) {
+          matched++;
+          first = null;
+          second = null;
+          if (matched === pairs.length) {
+            clearInterval(timerInterval);
+            document.getElementById("result").innerText = "🎉 모든 짝을 맞추었습니다!";
+          }
+        } else {
+          setTimeout(() => {
+            first.innerText = "?";
+            second.innerText = "?";
+            first.classList.remove("flipped");
+            second.classList.remove("flipped");
+            first = null;
+            second = null;
+          }, 800);
+        }
+      }
+    }
+
+    function isMatch(a, b) {
+      return pairs.some(([x, y]) => (a === x && b === y) || (a === y && b === x));
+    }
+
+    function startTimer() {
+      const timerDisplay = document.getElementById("timer");
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        timerDisplay.innerText = `⏱️ 남은 시간: ${timeLeft}초`;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          disableAll();
+          document.getElementById("result").innerText = "⛔ 시간이 초과되었습니다! 다시 도전해보세요.";
+        }
+      }, 1000);
+    }
+
+    function disableAll() {
+      cards.forEach(card => card.removeEventListener("click", handleFlip));
+    }
+
+    createBoard();
+    startTimer();
+  </script>
+</body>
+</html>
